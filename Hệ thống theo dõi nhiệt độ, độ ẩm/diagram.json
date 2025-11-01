@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "author": "Duy Ân Nguyễn",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 76.8, "left": -71.96, "attrs": {} },
+    {
+      "type": "wokwi-dht22",
+      "id": "dht1",
+      "top": -28.5,
+      "left": -168.6,
+      "attrs": {
+        "temperature": "28",
+        "humidity": "70"
+      }
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "bz1",
+      "top": -55.2,
+      "left": 107.4,
+      "attrs": { "volume": "0.1" }
+    },
+    { "type": "wokwi-relay-module", "id": "relay1", "top": 230.6, "left": 153.6, "attrs": {} }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "esp:5V", "relay1:VCC", "red", [ "h0" ] ],
+    [ "dht1:VCC", "esp:3V3", "red", [ "v0" ] ],
+    [ "dht1:SDA", "esp:15", "green", [ "v0" ] ],
+    [ "dht1:GND", "esp:GND.1", "cyan", [ "v0" ] ],
+    [ "esp:GND.2", "relay1:GND", "cyan", [ "v0" ] ],
+    [ "bz1:1", "esp:GND.1", "green", [ "v0" ] ],
+    [ "relay1:IN", "esp:16", "green", [ "h0" ] ],
+    [ "bz1:2", "esp:17", "green", [ "v0" ] ]
+  ],
+  "dependencies": {}
+}

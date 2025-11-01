@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Giám sát ESP32 DHT22 (HiveMQ)</title>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f9;
+      text-align: center;
+      padding: 20px;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+    #status {
+      margin-bottom: 20px;
+      font-weight: bold;
+      color: #007bff;
+    }
+    canvas {
+      max-width: 600px;
+      margin: 15px auto;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      padding: 10px;
+    }
+    #values {
+      font-size: 18px;
+      margin-top: 10px;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <h1>📊 Giám sát nhiệt độ & độ ẩm ESP32</h1>
+  <div id="status">Đang kết nối MQTT...</div>
+  
+  <canvas id="tempChart"></canvas>
+  <canvas id="humChart"></canvas>
+  
+  <div id="values">
+    🌡️ <span id="tempVal">--</span> °C <br>
+    💧 <span id="humVal">--</span> %
+  </div>
+
+  <script>
+    // ---------- CẤU HÌNH MQTT ----------
+    const broker = "wss://e2536c966bb4423c80c9d8acae01b8b2.s1.eu.hivemq.cloud:8884/mqtt";
+    const options = {
+      username: "hivemq.webclient.1761350609343",
+      password: "om20HA9Dv%1zs.N&:MYe",
+      reconnectPeriod: 3000
+    };
+    const topicSensor = "duyan/esp32/sensor/data";
+    const topicStatus = "duyan/esp32/status";
+
+    const client = mqtt.connect(broker, options);
+
+    const statusEl = document.getElementById("status");
+    const tempVal = document.getElementById("tempVal");
+    const humVal = document.getElementById("humVal");
+
+    // ---------- BIỂU ĐỒ NHIỆT ĐỘ ----------
+    const tempChart = new Chart(document.getElementById("tempChart"), {
+      type: "line",
+      data: {
+        labels: [],
+        datasets: [{
+          label: "Nhiệt độ (°C)",
+          borderColor: "red",
+          data: [],
+          tension: 0.3,
+          fill: false
+        }]
+      },
+      options: { scales: { y: { beginAtZero: true } } }
+    });
+
+    // ---------- BIỂU ĐỒ ĐỘ ẨM ----------
+    const humChart = new Chart(document.getElementById("humChart"), {
+      type: "line",
+      data: {
+        labels: [],
+        datasets: [{
+          label: "Độ ẩm (%)",
+          borderColor: "blue",
+          data: [],
+          tension: 0.3,
+          fill: false
+        }]
+      },
+      options: { scales: { y: { beginAtZero: true } } }
+    });
+
+    // ---------- KẾT NỐI MQTT ----------
+    client.on("connect", () => {
+      statusEl.textContent = "✅ Đã kết nối MQTT HiveMQ Cloud";
+      client.subscribe(topicSensor);
+      client.subscribe(topicStatus);
+    });
+
+    client.on("error", err => {
+      statusEl.textContent = "❌ Lỗi MQTT: " + err.message;
+    });
+
+    client.on("message", (topic, message) => {
+      const msg = message.toString();
+      if (topic === topicSensor) {
+        try {
+          const data = JSON.parse(msg);
+          const temp = data.temperature_C;
+          const hum = data.humidity_percent;
+          const time = new Date().toLocaleTimeString();
+
+          tempVal.textContent = temp.toFixed(1);
+          humVal.textContent = hum.toFixed(1);
+
+          updateChart(tempChart, time, temp);
+          updateChart(humChart, time, hum);
+        } catch (e) {
+          console.error("Lỗi parse dữ liệu:", e);
+        }
+      } else if (topic === topicStatus) {
+        console.log("📢 Status:", msg);
+      }
+    });
+
+    function updateChart(chart, label, value) {
+      chart.data.labels.push(label);
+      chart.data.datasets[0].data.push(value);
+      if (chart.data.labels.length > 10) {
+        chart.data.labels.shift();
+        chart.data.datasets[0].data.shift();
+      }
+      chart.update();
+    }
+  </script>
+</body>
+</html>
