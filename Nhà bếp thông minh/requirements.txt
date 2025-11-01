@@ -1,6 +1,0 @@
-Flask>=2.0
-flask-socketio>=5.0
-eventlet
-paho-mqtt
-twilio
-python-dotenv
